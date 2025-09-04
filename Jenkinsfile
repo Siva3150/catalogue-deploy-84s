@@ -3,7 +3,7 @@ pipeline {
         label 'agent-1'
     }
     environment { 
-        //appVersion = ''
+        appVersion = ''
         REGION = "us-east-1"
         ACC_ID = "445567085619"
         PROJECT = "roboshop"
