@@ -1,5 +1,5 @@
 pipeline {
-    agent  {
+    agent {
         label 'agent-1'
     }
     environment { 
@@ -13,12 +13,13 @@ pipeline {
         timeout(time: 30, unit: 'MINUTES') 
         disableConcurrentBuilds()
     }
-   parameters {
+    parameters {
         string(name: 'appVersion', description: 'Image version of the application')
         choice(name: 'deploy_to', choices: ['dev', 'qa', 'prod'], description: 'Pick the Environment')
     }
+
     // Build
-     stages {
+    stages {
         stage('Deploy') {
             steps {
                 script {
@@ -35,9 +36,9 @@ pipeline {
             }
         }
 
-        stage('Check Status'){
-            steps{
-                script{
+        stage('Check Status') {
+            steps {
+                script {
                     withAWS(credentials: 'aws-creds', region: 'us-east-1') {
                         def deploymentStatus = sh(returnStdout: true, script: "kubectl rollout status deployment/catalogue --timeout=30s -n $PROJECT || echo FAILED").trim()
                         if (deploymentStatus.contains("successfully rolled out")) {
@@ -50,43 +51,42 @@ pipeline {
                             def rollbackStatus = sh(returnStdout: true, script: "kubectl rollout status deployment/catalogue --timeout=30s -n $PROJECT || echo FAILED").trim()
                             if (rollbackStatus.contains("successfully rolled out")) {
                                 error "Deployment is Failure, Rollback Success"
-                            }
-                            else{
+                            } else {
                                 error "Deployment is Failure, Rollback Failure. Application is not running"
                             }
                         }
-
                     }
                 }
             }
         }
-    }
 
-      // API Testing
-        stage('Functional Testing'){
-            when{
-                expression { params.deploy_to = "dev" }
+        // API Testing
+        stage('Functional Testing') {
+            when {
+                expression { return params.deploy_to == "dev" }
             }
-             steps{
-                script{
+            steps {
+                script {
                     echo "Run functional test cases"
                 }
             }
         }
+
         // All components testing
-        stage('Integration Testing'){
-            when{
-                expression { params.deploy_to = "qa" }
+        stage('Integration Testing') {
+            when {
+                expression { return params.deploy_to == "qa" }
             }
-             steps{
-                script{
+            steps {
+                script {
                     echo "Run Integration test cases"
                 }
             }
         }
+
         stage('PROD Deploy') {
-            when{
-                expression { params.deploy_to = "prod" }
+            when {
+                expression { return params.deploy_to == "prod" }
             }
             steps {
                 script {
@@ -101,7 +101,7 @@ pipeline {
                 }
             }
         }
-    
+    }
 
     post { 
         always { 
